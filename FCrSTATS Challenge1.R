@@ -5,12 +5,13 @@ library(dplyr)
 library(ggplot2)
 
 # Create dataframe with events
-events <- StatsBombFreeEvents() # download the events data from Statsbomb 
-events <- cleanlocations(events) # Split the location data for relevant events 
-events <- events %>% filter(competition_id == 37) # Select only the WSL 2018/19 Season Data 
+events <- StatsBombFreeEvents() # Download the events data from Statsbomb 
 
-# Save dataframe as a file
-saveRDS(events, "SB_events_WSL.RDS")
+saveRDS(events, "SB_events_WSL.RDS") # Save dataframe as a file
+
+events <- cleanlocations(events) # Split the location data for relevant events 
+events <- events %>% filter(competition_id == 37) # Select only the WSL 2018/19 season data
+events <- events %>% filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
 
 # Function for minutes played
 get.minutesplayed <- function(events){
