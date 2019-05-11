@@ -88,20 +88,20 @@ events <- events %>%
   mutate(type.name = ifelse(type.name == "Pressure" & location.x <= 40, "Low.Pressure", type.name)) %>% # Add low pressure
   mutate(type.name = ifelse(type.name == "Pressure" & location.x > 40 & location.x <= 80, "Middle.Pressure", type.name)) %>% # Add middle pressure
   mutate(type.name = ifelse(type.name == "Pressure" & location.x > 80, "High.Pressure", type.name)) # Add high pressure 
-  
 
-  
-  events <- events %>% filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
-  
-
-# All in one 
+# Player summaries of type name
 player.summaries <- events %>% 
-  filter(total.minutes.played > 270 & position.name != "Goalkeeper" & competition_id == 37) %>% 
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
   group_by(player.name, type.name) %>%
   summarise(Total = (n() / max(total.minutes.played) * 90), 
             total.minutes.played = max(total.minutes.played)) %>% 
   group_by(player.name) %>% 
   spread(type.name, Total)
+
+# Player summaries of shot outcome
+
+
+
 
 # Replace NAs with zero
 player.summaries[is.na(player.summaries)] <- 0
@@ -110,11 +110,18 @@ player.summaries[is.na(player.summaries)] <- 0
 allVars <- colnames(player.summaries)
 
 events %>%
+  filter(total.minutes.played > 270 & position.name != "Goalkeeper" & competition_id == 37) %>%
   group_by(player.name, shot.outcome.name) %>%
   summarise(Total = (n() / max(total.minutes.played) * 90), 
                      total.minutes.played = max(total.minutes.played)) %>% 
   group_by(player.name) %>%
   spread(shot.outcome.name, Total)
+
+
+
+
+
+
 
 # Load psych package
 library(psych)
