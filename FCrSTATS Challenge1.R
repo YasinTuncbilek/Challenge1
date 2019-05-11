@@ -158,12 +158,64 @@ summaries.shots <- events %>%
   group_by(player.name) %>%
   summarise_at(c("shot.follows_dribble", "shot.open_goal", "shot.first_time", "shot.aerial_won", "shot.deflected", "shot.one_on_one"), .funs = sum, na.rm = TRUE)
 
+summaries.shots <- merge(summaries.shots, minutes.played.per.player, by = "player.name")
+
+summaries.shots <- summaries.shots %>%
+  mutate(shot.follows_dribble = (shot.follows_dribble / total.minutes.played) * 90, shot.open_goal = (shot.open_goal / total.minutes.played) * 90, shot.first_time = (shot.first_time / total.minutes.played) * 90,
+         shot.aerial_won = (shot.aerial_won / total.minutes.played) * 90, shot.deflected = (shot.deflected / total.minutes.played) * 90, shot.one_on_one = (shot.one_on_one / total.minutes.played) * 90)
+
+# Player summaries of shot body part name
+summaries.shot.body_part.name <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name, shot.body_part.name) %>%
+  summarise(Total = (n() / max(total.minutes.played) * 90), 
+            total.minutes.played = max(total.minutes.played)) %>% 
+  group_by(player.name) %>%
+  spread(shot.body_part.name, Total)
+
+# Calculate shots per 90 min.
+shots <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name, shot.body_part.name) %>%
+  filter(shot.body_part.name != "NA") %>%
+  group_by(player.name) %>%
+  summarise(Shots = n()) 
+
+summaries.shots <- merge(shots, summaries.shots, by = "player.name", all = TRUE)
+
+summaries.shots <- summaries.shots %>%
+  mutate(Shots = (Shots / total.minutes.played) * 90)
+
+# Calculate xA per 90 min.
+events$pass.goal_assist <- ifelse(is.na(events$pass.goal_assist), 0, 1)
+
+xA <- list()
+for (a in 1:nrow(events)) {
+  print(a)
+  if(events[a,]$pass.goal_assist == 1){
+    xA <- append(unlist(xA), 
+                 as.numeric(events[which(events$id == events[a,]$pass.assisted_shot_id),]$shot.statsbomb_xg)
+    )}else{
+      xA <- append(unlist(xA), 0)
+    }
+}
+
+events$xA <- xA
+
+xA <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name) %>%
+  summarise(xA = sum(xA))
+
+xA <- merge(xA, minutes.played.per.player, by = "player.name")
+
+xA <- xA %>%
+  mutate(xA = (xA / total.minutes.played) * 90)
 
 
 
-unique(events$shot.body_part.name)
 
-  
+
 
 
 # Merge all player summaries
