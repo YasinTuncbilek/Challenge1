@@ -134,8 +134,34 @@ summaries.dribbles <- merge(summaries.dribbles, minutes.played.per.player, by = 
 summaries.dribbles <- summaries.dribbles %>%
   mutate(dribble.overrun = (dribble.overrun / total.minutes.played) * 90, dribble.nutmeg = (dribble.nutmeg / total.minutes.played) * 90)
 
+# Calculate xG per 90 minutes
+xG <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name) %>%
+  summarise(xG = sum(shot.statsbomb_xg, na.rm = TRUE))
+
+xG.without.penalties <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  filter(shot.type.name != "Penalty") %>%
+  group_by(player.name) %>%
+  summarise(xG.without.penalties = sum(shot.statsbomb_xg, na.rm = TRUE))
+
+xG <- merge(xG, xG.without.penalties, by = "player.name", all = TRUE)
+xG <- merge(xG, minutes.played.per.player, by = "player.name")
+
+xG <- xG %>%
+  mutate(xG = (xG / total.minutes.played) * 90, xG.without.penalties = (xG.without.penalties / total.minutes.played) * 90)
+
+# Player summaries of shots
+summaries.shots <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name) %>%
+  summarise_at(c("shot.follows_dribble", "shot.open_goal", "shot.first_time", "shot.aerial_won", "shot.deflected", "shot.one_on_one"), .funs = sum, na.rm = TRUE)
 
 
+
+
+unique(events$shot.body_part.name)
 
   
 
