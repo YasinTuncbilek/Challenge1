@@ -11,7 +11,6 @@ saveRDS(events, "SB_events_WSL.RDS") # Save dataframe as a file
 
 events <- cleanlocations(events) # Split the location data for relevant events 
 events <- events %>% filter(competition_id == 37) # Select only the WSL 2018/19 season data
-events <- events %>% filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
 
 # Function for minutes played
 get.minutesplayed <- function(events){
@@ -78,16 +77,22 @@ minutes.played.per.player <-
 # Add total minutes to events dataframe 
 events <- merge(events, minutes.played.per.player, by = "player.name")
 
-## Add pass in the box  
+## Add additional relevant types: passes, shots & pressures   
 events <- events %>% 
-  mutate(type.name = ifelse(type.name == "Pass" & pass.length >= quantile(events$pass.length, probs = c(0.95), na.rm = T), "Long.Pass", type.name)) %>%
-  mutate(type.name = ifelse(type.name == "Pass" & pass.end_location.x >= 102 & pass.end_location.y > 18 & pass.end_location.y < 62, "Pass.into.Box", type.name)) %>% 
-  mutate(type.name = ifelse(type.name == "Shot" & location.x >= 102 & location.y > 18 & location.y < 62, "Shot.in.box", type.name)) %>% 
-  mutate(type.name = ifelse(type.name == "Shot", "Shot.outside.box", type.name)) %>% 
-  mutate(type.name = ifelse(type.name == ))
-  mutate(type.name = ifelse(type.name == "Pressure" & location.x >= 80, "High.Pressure", type.name)) %>%
-  mutate(type.name = ifelse(type.name == "Pressure" & location.x >= 40 & location.x < 80, "Middle.Pressure", type.name))
+  mutate(type.name = ifelse(type.name == "Pass" & pass.length >= quantile(events$pass.length, probs = c(0.95), na.rm = T), "Long.Pass", type.name)) %>% # Add long pass
+  mutate(type.name = ifelse(type.name == "Pass" & pass.end_location.x >= 102 & pass.end_location.y > 18 & pass.end_location.y < 62, "Pass.into.Box", type.name)) %>% # Add pass into box
+  mutate(type.name = ifelse(type.name == "Pass" & pass.end_location.x > 80, "Pass.into.Finalthird", type.name)) %>% # Add pass into final third
+  mutate(type.name = ifelse(type.name == "Pass" & location.x > 80 & pass.end_location.x > 80 & pass.end_location.x <= 120, "Pass.in.Finalthird", type.name)) %>% # Add pass in final third 
+  mutate(type.name = ifelse(type.name == "Shot" & location.x >= 102 & location.y > 18 & location.y < 62, "Shot.in.box", type.name)) %>% # Add shot in box
+  mutate(type.name = ifelse(type.name == "Shot", "Shot.outside.box", type.name)) %>% # Add shot outside box
+  mutate(type.name = ifelse(type.name == "Pressure" & location.x <= 40, "Low.Pressure", type.name)) %>% # Add low pressure
+  mutate(type.name = ifelse(type.name == "Pressure" & location.x > 40 & location.x <= 80, "Middle.Pressure", type.name)) %>% # Add middle pressure
+  mutate(type.name = ifelse(type.name == "Pressure" & location.x > 80, "High.Pressure", type.name)) # Add high pressure 
+  
 
+  
+  events <- events %>% filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  
 
 # All in one 
 player.summaries <- events %>% 
