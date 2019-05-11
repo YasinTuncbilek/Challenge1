@@ -90,7 +90,7 @@ events <- events %>%
   mutate(type.name = ifelse(type.name == "Pressure" & location.x > 80, "High.Pressure", type.name)) # Add high pressure 
 
 # Player summaries of type name
-player.summaries <- events %>% 
+summaries.type.name <- events %>% 
   filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
   group_by(player.name, type.name) %>%
   summarise(Total = (n() / max(total.minutes.played) * 90), 
@@ -99,7 +99,49 @@ player.summaries <- events %>%
   spread(type.name, Total)
 
 # Player summaries of shot outcome
+summaries.shot.outcome <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name, shot.outcome.name) %>%
+  summarise(Total = (n() / max(total.minutes.played) * 90), 
+            total.minutes.played = max(total.minutes.played)) %>% 
+  group_by(player.name) %>%
+  spread(shot.outcome.name, Total)
 
+# Player summaries of passes
+summaries.passes <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name) %>%
+  summarise_at(c("pass.switch", "pass.aerial_won", "pass.cross", "pass.shot_assist", "pass.miscommunication", "pass.through_ball",
+                             "pass.cut_back", "pass.backheel", "pass.deflected", "pass.goal_assist"), .funs = sum, na.rm = TRUE)  
+
+summaries.passes <- merge(summaries.passes, minutes.played.per.player, by = "player.name")
+
+summaries.passes <- summaries.passes %>%
+  mutate(pass.switch = (pass.switch / total.minutes.played) * 90, pass.aerial_won = (pass.aerial_won / total.minutes.played) * 90,
+         pass.cross = (pass.cross / total.minutes.played) * 90, pass.shot_assist = (pass.shot_assist / total.minutes.played) * 90,
+         pass.miscommunication = (pass.miscommunication / total.minutes.played) * 90, pass.through_ball = (pass.through_ball / total.minutes.played) * 90,
+         pass.cut_back = (pass.cut_back / total.minutes.played) * 90, pass.backheel = (pass.backheel / total.minutes.played) * 90,
+         pass.deflected = (pass.deflected / total.minutes.played) * 90, pass.goal_assist = (pass.goal_assist / total.minutes.played) * 90)
+  
+# Player summaries of dribbles
+summaries.dribbles <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name) %>%
+  summarise_at(c("dribble.overrun", "dribble.nutmeg"), .funs = sum, na.rm = TRUE)  
+  
+summaries.dribbles <- merge(summaries.dribbles, minutes.played.per.player, by = "player.name")
+
+summaries.dribbles <- summaries.dribbles %>%
+  mutate(dribble.overrun = (dribble.overrun / total.minutes.played) * 90, dribble.nutmeg = (dribble.nutmeg / total.minutes.played) * 90)
+
+
+
+
+  
+
+
+# Merge all player summaries
+player.summaries <- merge(summaries.type.name, summaries.shot.outcome, by = c("player.name", "total.minutes.played"))
 
 
 
@@ -109,13 +151,7 @@ player.summaries[is.na(player.summaries)] <- 0
 # See all variables  
 allVars <- colnames(player.summaries)
 
-events %>%
-  filter(total.minutes.played > 270 & position.name != "Goalkeeper" & competition_id == 37) %>%
-  group_by(player.name, shot.outcome.name) %>%
-  summarise(Total = (n() / max(total.minutes.played) * 90), 
-                     total.minutes.played = max(total.minutes.played)) %>% 
-  group_by(player.name) %>%
-  spread(shot.outcome.name, Total)
+
 
 
 
