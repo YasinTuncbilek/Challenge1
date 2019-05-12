@@ -114,9 +114,9 @@ summaries.passes <- events %>%
   summarise_at(c("pass.switch", "pass.aerial_won", "pass.cross", "pass.shot_assist", "pass.miscommunication", "pass.through_ball",
                              "pass.cut_back", "pass.backheel", "pass.deflected", "pass.goal_assist"), .funs = sum, na.rm = TRUE)  
 
-summaries.passes <- merge(summaries.passes, minutes.played.per.player, by = "player.name")
+summaries.passes <- merge(summaries.passes, minutes.played.per.player, by = "player.name") # Add minutes played per player
 
-summaries.passes <- summaries.passes %>%
+summaries.passes <- summaries.passes %>% # Calculate per 90 min.
   mutate(pass.switch = (pass.switch / total.minutes.played) * 90, pass.aerial_won = (pass.aerial_won / total.minutes.played) * 90,
          pass.cross = (pass.cross / total.minutes.played) * 90, pass.shot_assist = (pass.shot_assist / total.minutes.played) * 90,
          pass.miscommunication = (pass.miscommunication / total.minutes.played) * 90, pass.through_ball = (pass.through_ball / total.minutes.played) * 90,
@@ -129,12 +129,12 @@ summaries.dribbles <- events %>%
   group_by(player.name) %>%
   summarise_at(c("dribble.overrun", "dribble.nutmeg"), .funs = sum, na.rm = TRUE)  
   
-summaries.dribbles <- merge(summaries.dribbles, minutes.played.per.player, by = "player.name")
+summaries.dribbles <- merge(summaries.dribbles, minutes.played.per.player, by = "player.name") # Add minutes player per player
 
-summaries.dribbles <- summaries.dribbles %>%
+summaries.dribbles <- summaries.dribbles %>% # Calculate per 90 min.
   mutate(dribble.overrun = (dribble.overrun / total.minutes.played) * 90, dribble.nutmeg = (dribble.nutmeg / total.minutes.played) * 90)
 
-# Calculate xG per 90 minutes
+# Calculate xG & xG ecluding penalties per 90 min.
 xG <- events %>%
   filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
   group_by(player.name) %>%
@@ -146,10 +146,10 @@ xG.without.penalties <- events %>%
   group_by(player.name) %>%
   summarise(xG.without.penalties = sum(shot.statsbomb_xg, na.rm = TRUE))
 
-xG <- merge(xG, xG.without.penalties, by = "player.name", all = TRUE)
-xG <- merge(xG, minutes.played.per.player, by = "player.name")
+xG <- merge(xG, xG.without.penalties, by = "player.name", all = TRUE) # Merge both xG calculations
+xG <- merge(xG, minutes.played.per.player, by = "player.name") # Add minutes player per player
 
-xG <- xG %>%
+xG <- xG %>% # Calculate per 90 min.
   mutate(xG = (xG / total.minutes.played) * 90, xG.without.penalties = (xG.without.penalties / total.minutes.played) * 90)
 
 # Player summaries of shots
@@ -158,9 +158,9 @@ summaries.shots <- events %>%
   group_by(player.name) %>%
   summarise_at(c("shot.follows_dribble", "shot.open_goal", "shot.first_time", "shot.aerial_won", "shot.deflected", "shot.one_on_one"), .funs = sum, na.rm = TRUE)
 
-summaries.shots <- merge(summaries.shots, minutes.played.per.player, by = "player.name")
+summaries.shots <- merge(summaries.shots, minutes.played.per.player, by = "player.name") # Add minutes player per player
 
-summaries.shots <- summaries.shots %>%
+summaries.shots <- summaries.shots %>% # Caculate per 90 min.
   mutate(shot.follows_dribble = (shot.follows_dribble / total.minutes.played) * 90, shot.open_goal = (shot.open_goal / total.minutes.played) * 90, shot.first_time = (shot.first_time / total.minutes.played) * 90,
          shot.aerial_won = (shot.aerial_won / total.minutes.played) * 90, shot.deflected = (shot.deflected / total.minutes.played) * 90, shot.one_on_one = (shot.one_on_one / total.minutes.played) * 90)
 
@@ -181,9 +181,9 @@ shots <- events %>%
   group_by(player.name) %>%
   summarise(Shots = n()) 
 
-summaries.shots <- merge(shots, summaries.shots, by = "player.name", all = TRUE)
+summaries.shots <- merge(shots, summaries.shots, by = "player.name", all = TRUE) # Merge shots data frames
 
-summaries.shots <- summaries.shots %>%
+summaries.shots <- summaries.shots %>% # Calculate per 90 min.
   mutate(Shots = (Shots / total.minutes.played) * 90)
 
 # Calculate xA per 90 min.
@@ -202,15 +202,15 @@ for (a in 1:nrow(events)) {
 
 events$xA <- xA
 
-xA <- events %>%
+xA <- events %>% # Sum all xA
   filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
   group_by(player.name) %>%
   summarise(xA = sum(xA))
 
-xA <- merge(xA, minutes.played.per.player, by = "player.name")
+xA <- merge(xA, minutes.played.per.player, by = "player.name") # Add minutes played per played
 
-xA <- xA %>%
-  mutate(xA = (xA / total.minutes.played) * 90)
+xA <- xA %>% # Calculate per 90 min.
+  mutate(xA = (xA / total.minutes.played) * 90) 
 
 # Player summaries of pass height name
 summaries.pass.height.name <- events %>%
@@ -229,9 +229,9 @@ dribbles <- events %>%
   group_by(player.name) %>%
   summarise(Dribbles = n()) 
 
-summaries.dribbles <- merge(dribbles, summaries.dribbles, by = "player.name", all = TRUE)
+summaries.dribbles <- merge(dribbles, summaries.dribbles, by = "player.name", all = TRUE) # Merge dribbles data frames
 
-summaries.dribbles <- summaries.dribbles %>%
+summaries.dribbles <- summaries.dribbles %>% # Calculate per 90 min.
   mutate(Dribbles = (Dribbles / total.minutes.played) * 90)
 
 # Delete irrelevant columns
@@ -267,6 +267,8 @@ player.summaries[is.na(player.summaries)] <- 0
 
 # See all variables  
 allVars <- colnames(player.summaries)
+
+
 
 # Select data for PCA & cluster analysis
 data <- player.summaries[, c(1, 2, 5:8, 12, 14:16, 18:21, 23, 25:27, 30:32, 34:43, 45:47, 49:54, 56:63)]
