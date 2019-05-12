@@ -338,23 +338,21 @@ install.packages("dynamicTreeCut")
 library(dynamicTreeCut)
 
 # Use cutreeDynamic to determine numbers of clusters
-clusters <- cutreeDynamic(hc_data, cutHeight = NULL, minClusterSize = 20, method = "hybrid", distM = as.matrix(d_data))
+clusters <- cutreeDynamic(hc_data, cutHeight = NULL, minClusterSize = 3, method = "hybrid", distM = as.matrix(d_data))
+clusters
 
 # Provide colors to the branches and labels
 dend <- dend %>% 
   color_branches(k = 3) %>%
-  color_labels(col = "black") %>%
-  
-par(cex = 0.6, mar = c(5, 8, 4, 1))
-circlize_dendrogram(dend, main = "Title", labels = TRUE)
+  color_labels(col = "black") 
 
+# Create final plot  
+par(cex = 0.8, mar = c(5, 8, 4, 1))
+circlize_dendrogram(dend, labels = TRUE)
+title(main = "Playing style partners of players in WSL season 2018/2019")
 
-
-
-
-
-
-
-
-
-
+# Check stats of players in same cluster
+shortlist <- player.summaries %>%
+  select("player.name", "total.minutes.played", "Goal", "pass.goal_assist", "xG", "xA") %>%
+  filter(player.name %in% c("Lauren Kemp", "Francesca Kirby", "Nikita Parris", "Vivianne Miedema",
+                            "Adriana Leon", "Ellen White", "Bethany England", "Millie Farrow"))
