@@ -268,26 +268,48 @@ player.summaries[is.na(player.summaries)] <- 0
 # See all variables  
 allVars <- colnames(player.summaries)
 
+### PCA: prcomp & princomp ###
+# Select data for PCA 
+data.pca <- player.summaries[, c(1, 2, 5:8, 12, 14:16, 18:21, 23, 25:27, 30:32, 34:43, 45:47, 49:54, 56:63)]
 
+# Use prcomp function
+results <- prcomp(data.pca[, 3:48], scale = TRUE)
+results
 
-# Select data for PCA & cluster analysis
-data <- player.summaries[, c(1, 2, 5:8, 12, 14:16, 18:21, 23, 25:27, 30:32, 34:43, 45:47, 49:54, 56:63)]
+# Get eigenvalues of principa components (> 1)
+eig <- (results$sdev)^2
 
+# Get variances of principal components
+variance <- eig*100/sum(eig)
+
+# Get cumulative variances
+cumvar <- cumsum(variance)
+
+# Combine to dataframe
+eig.var.cum <- data.frame(eig = eig, variance = variance, cumvariance = cumvar)
+eig.var.cum
+
+# Use princomp to compare results with prcomp
+princomp(data.pca[, 3:48], cor = TRUE)
+summary(princomp(data.pca[, 3:48], cor = TRUE))
+
+### PCA: principal ###
 # Load psych package
 library(psych)
 
-x <- scale(data[, 3:48])
+# Scale data
+x <- scale(data.pca[, 3:48])
 
-# Run PCA
-# Varimax Rotated Principal Components retaining 6 components
-fit <- principal(x, nfactors = 10, rotate = "varimax", method = "regression")
+# PCA: Varimax Rotated Principal Components retaining 13 components
+fit <- principal(x, nfactors = 13, rotate = "varimax", method = "regression")
 
 # Print factor loadings with cutoff .6
 print(fit$loadings, cutoff = .6, sort = TRUE)
 
-pca <- prcomp(player.summaries[, c(3:24)], center = TRUE, scale. = TRUE)
-summary(pca)
-
+### Cluster analysis ###
+# Select data for cluster analysis
+data.ca <- data.pca[, c(1, 2, 20, 33, 36, 39, 41, 43, 44, 45, 47, 48, 8, 11, 14, 21, 12, 26, 28, 34,
+                        18, 22, 25, 31, 5, 6, 9, 35, 46, 30, 32, 40, 42, 24, 37, 19, 15)]
 
 d_data <- dist(player.summaries[, 3:63], method = "euclidean")
 hc_data <- hclust(d_data, method = "complete") 
