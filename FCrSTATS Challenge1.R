@@ -307,22 +307,73 @@ fit <- principal(x, nfactors = 13, rotate = "varimax", method = "regression")
 print(fit$loadings, cutoff = .6, sort = TRUE)
 
 ### Cluster analysis ###
-# Select data for cluster analysis
+# Select data for cluster analysis: use variables that loaded on the factors
 data.ca <- data.pca[, c(1, 2, 20, 33, 36, 39, 41, 43, 44, 45, 47, 48, 8, 11, 14, 21, 12, 26, 28, 34,
                         18, 22, 25, 31, 5, 6, 9, 35, 46, 30, 32, 40, 42, 24, 37, 19, 15)]
 
-d_data <- dist(player.summaries[, 3:63], method = "euclidean")
-hc_data <- hclust(d_data, method = "complete") 
-plot(hc_data)
+# Save player names
+player_names <- data.pca[, 1]
 
+# Perform cluster analysis with hclust
+d_data <- dist(data.ca[, 3:37], method = "euclidean")
+hc_data <- hclust(d_data, method = "average") 
+plot(hc_data, labels = data.ca$player.name, hang = -1, cex = 0.6)
+dend <- hc_data %>% as.dendrogram 
+
+# Install and load dendextend & circlize package
 install.packages("dendextend")
 library(dendextend)
-dend <- as.dendrogram(hc_data)
-dend <- rotate(dend, 1:144)
-plot(dend)
 
 install.packages("circlize")
 library(circlize)
+
+dend <- rotate(dend, 1:144)
+plot(dend)
+
+
 par(mar = rep(0,4))
-circlize_dendrogram(dend)
+circlize_dendrogram(dend, labels = TRUE)
+
+labels(dend) <- data.ca$player.name[hc_data$order]
+labels(dend)
+
+
+
+
+hc_data$order
+
+
+
+
+
+
+
+# Install and load dynamicTreeCut package
+install.packages("dynamicTreeCut")
+library(dynamicTreeCut)
+
+# Use cutreeDynamic
+clusters <- cutreeDynamic(hc_data, cutHeight = NULL, minClusterSize = 20, method = "hybrid", distM = as.matrix(d_data))
+
+# We need to sort them to the order of the dendrogram:
+clusters <- clusters[order.dendrogram(dend)]
+clusters_numbers <- unique(clusters) - (0 %in% clusters)
+n_clusters <- length(clusters_numbers)
+
+library(colorspace)
+cols <- rainbow_hcl(n_clusters)
+true_species_cols <- rainbow_hcl(3)[as.numeric(data.ca[,][order.dendrogram(dend),5])]
+dend2 <- dend %>% 
+  branches_attr_by_clusters(clusters, values = cols) %>% 
+  color_labels(col =   true_species_cols)
+
+plot(dend2)
+clusters <- factor(clusters)
+levels(clusters)[-1]  <- cols[-5][c(1,4,2,3)] 
+# Get the clusters to have proper colors.
+# fix the order of the colors to match the branches.
+colored_bars(clusters, dend, sort_by_labels_order = FALSE)
+
+
+
 
