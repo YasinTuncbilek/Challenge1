@@ -212,16 +212,55 @@ xA <- merge(xA, minutes.played.per.player, by = "player.name")
 xA <- xA %>%
   mutate(xA = (xA / total.minutes.played) * 90)
 
+# Player summaries of pass height name
+summaries.pass.height.name <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name, pass.height.name) %>%
+  summarise(Total = (n() / max(total.minutes.played) * 90), 
+            total.minutes.played = max(total.minutes.played)) %>% 
+  group_by(player.name) %>%
+  spread(pass.height.name, Total)
 
+# Calculate dribbles per 90 min.
+dribbles <- events %>%
+  filter(position.name %in% c("Center Forward", "Right Center Forward", "Right Wing", "Center Attacking Midfield", "Left Center Forward", "Left Wing", "Secondary Striker")) %>% # Select the events of the positions Nikita Parris has played, including two additional attacking positions: Left Wing & Secondary Striker
+  group_by(player.name, dribble.outcome.name) %>%
+  filter(dribble.outcome.name == "Complete") %>%
+  group_by(player.name) %>%
+  summarise(Dribbles = n()) 
 
+summaries.dribbles <- merge(dribbles, summaries.dribbles, by = "player.name", all = TRUE)
 
+summaries.dribbles <- summaries.dribbles %>%
+  mutate(Dribbles = (Dribbles / total.minutes.played) * 90)
 
+# Delete irrelevant columns
+summaries.dribbles <- summaries.dribbles[, -5]
+summaries.pass.height.name <- summaries.pass.height.name[, -6]
+summaries.passes <- summaries.passes[, -12]
+summaries.shot.body_part.name <- summaries.shot.body_part.name[, -c(2, 6)]
+summaries.shot.outcome <- summaries.shot.outcome[, c(1,4)]
+summaries.shots <- summaries.shots[, -9]
+summaries.type.name <- summaries.type.name[, -2]
+xA <- xA[, -3]
+xG <- xG[, -4]
 
+# Merge summaries of passes
+summaries.passes <- merge(summaries.pass.height.name, summaries.passes, by = "player.name")
 
-# Merge all player summaries
-player.summaries <- merge(summaries.type.name, summaries.shot.outcome, by = c("player.name", "total.minutes.played"))
+# Merge summaries of shots
+summaries.shots <- merge(summaries.shots, summaries.shot.body_part.name, by = "player.name")
+summaries.shots <- merge(summaries.shots, summaries.shot.outcome, by = "player.name")
 
+# Merge all summaries
+player.summaries <- merge(summaries.type.name, summaries.dribbles, by = "player.name")
+player.summaries <- merge(player.summaries, summaries.passes, by = "player.name")
+player.summaries <- merge(player.summaries, summaries.shots, by = "player.name")
+player.summaries <- merge(player.summaries, xA, by = "player.name")
+player.summaries <- merge(player.summaries, xG, by = "player.name")
 
+# Reorder columns
+player.summaries <- player.summaries[, c(1, 36, 2:35, 37:63)]
 
 # Replace NAs with zero
 player.summaries[is.na(player.summaries)] <- 0
@@ -229,24 +268,37 @@ player.summaries[is.na(player.summaries)] <- 0
 # See all variables  
 allVars <- colnames(player.summaries)
 
-
-
-
-
-
-
-
+# Select data for PCA & cluster analysis
+data <- player.summaries[, c(1, 2, 5:8, 12, 14:16, 18:21, 23, 25:27, 30:32, 34:43, 45:47, 49:54, 56:63)]
 
 # Load psych package
 library(psych)
 
-x <- scale(player.summaries[, 3:32])
-
+x <- scale(data[, 3:48])
 
 # Run PCA
 # Varimax Rotated Principal Components retaining 6 components
-fit <- principal(x, nfactors = 5, rotate = "varimax", method = "regression")
+fit <- principal(x, nfactors = 10, rotate = "varimax", method = "regression")
 
 # Print factor loadings with cutoff .6
 print(fit$loadings, cutoff = .6, sort = TRUE)
+
+pca <- prcomp(player.summaries[, c(3:24)], center = TRUE, scale. = TRUE)
+summary(pca)
+
+
+d_data <- dist(player.summaries[, 3:63], method = "euclidean")
+hc_data <- hclust(d_data, method = "complete") 
+plot(hc_data)
+
+install.packages("dendextend")
+library(dendextend)
+dend <- as.dendrogram(hc_data)
+dend <- rotate(dend, 1:144)
+plot(dend)
+
+install.packages("circlize")
+library(circlize)
+par(mar = rep(0,4))
+circlize_dendrogram(dend)
 
